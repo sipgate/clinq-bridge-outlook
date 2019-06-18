@@ -44,7 +44,6 @@ export class OutlookAdapter implements Adapter {
 
 		const outlookContacts = await client
 		.api('/me/contacts')
-		.top(10)
 		.select('id,givenName,surname,emailAddresses,companyName,displayName,businessPhones,homePhones,mobilePhone')
 		.orderby('givenName ASC')
 		.get();
