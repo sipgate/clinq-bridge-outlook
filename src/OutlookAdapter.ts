@@ -1,7 +1,19 @@
 import {Adapter, Config, Contact, PhoneNumberLabel} from "@clinq/bridge";
 import {Request} from "express";
 import {OutlookContact} from "./model";
-import {} from 'simple-oauth2';
+
+
+const credentials = {
+	client: {
+		id: process.env.APP_ID,
+		secret: process.env.APP_PASSWORD,
+	},
+	auth: {
+		tokenHost: 'https://login.microsoftonline.com',
+		authorizePath: 'common/oauth2/v2.0/authorize',
+		tokenPath: 'common/oauth2/v2.0/token'
+	}
+};
 
 export class OutlookAdapter implements Adapter {
 
@@ -52,24 +64,17 @@ export class OutlookAdapter implements Adapter {
 	}
 
 	public async getOAuth2RedirectUrl(): Promise<string> {
-		return process.env.REDIRECT_URI;
+		const host = credentials.auth.tokenHost;
+		const path = credentials.auth.authorizePath;
+		const scopes = process.env.APP_SCOPES.split(" ").join("+");
+		const callbackUri = encodeURI(process.env.REDIRECT_URI);
+		const appId = process.env.APP_ID;
+		return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${appId}`;
 	};
 
 	public async handleOAuth2Callback(req: Request): Promise<Config> {
 
 		const {code} = req.query;
-
-		const credentials = {
-			client: {
-				id: process.env.APP_ID,
-				secret: process.env.APP_PASSWORD,
-			},
-			auth: {
-				tokenHost: 'https://login.microsoftonline.com',
-				authorizePath: 'common/oauth2/v2.0/authorize',
-				tokenPath: 'common/oauth2/v2.0/token'
-			}
-		};
 
 		const oauth2Client = require('simple-oauth2').create(credentials);
 
