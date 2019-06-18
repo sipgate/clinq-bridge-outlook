@@ -1,0 +1,8 @@
+# Node files
+node_modules
+npm-debug.log
+package-lock.json
+yarn-error.log
+
+#TypeScript
+dist/
