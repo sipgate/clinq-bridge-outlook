@@ -84,7 +84,7 @@ export class OutlookAdapter implements Adapter {
 		const host = credentials.auth.tokenHost;
 		const path = credentials.auth.authorizePath;
 		const scopes = APP_SCOPES.split(" ").join("+");
-		const callbackUri = encodeURI(REDIRECT_URI);
+		const callbackUri = encodeURIComponent(REDIRECT_URI);
 		return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
 	}
 
