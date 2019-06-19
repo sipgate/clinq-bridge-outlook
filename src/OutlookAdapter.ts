@@ -4,8 +4,11 @@ import { Request } from "express";
 import { create } from "simple-oauth2";
 import { env } from "./env";
 import { OutlookContact } from "./model";
+import jwtDecode from "jwt-decode"
 
 const { APP_ID, APP_PASSWORD, APP_SCOPES, REDIRECT_URI } = env;
+
+const TEN_MINUTES = 600;
 
 const credentials = {
 	client: {
@@ -19,21 +22,29 @@ const credentials = {
 	}
 };
 
+const refreshAccessToken = async (refreshToken: string) => {
+	const {
+		token: { access_token }
+	} = await create(credentials)
+		.accessToken.create({
+			refresh_token: refreshToken
+		})
+		.refresh();
+
+	return access_token;
+}
+
 const getClient = (config: Config) => {
 	const [accessToken, refreshToken] = config.apiKey.split(":");
 
 	return Client.init({
 		authProvider: async done => {
-			// TODO check expired
-			const {
-				token: { access_token }
-			} = await create(credentials)
-				.accessToken.create({
-					refresh_token: refreshToken
-				})
-				.refresh();
 
-			done(null, access_token);
+			const { exp } = jwtDecode(accessToken);
+			const now = Math.round(new Date().getTime() / 1000);
+			const expired = (now - TEN_MINUTES) > exp
+
+			done(null, expired ? await refreshAccessToken(refreshToken) : accessToken);
 		}
 	});
 };
