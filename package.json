@@ -14,8 +14,7 @@
 	"license": "Apache-2.0",
 	"scripts": {
 		"postinstall": "tsc",
-		"start": "node dist/index.js",
-		"watch": "ts-node-dev --respawn src/index.ts"
+		"start": "ts-node-dev src/index.ts"
 	},
 	"dependencies": {
 		"@clinq/bridge": "^10.0.4",
@@ -23,13 +22,16 @@
 		"axios": "^0.18.0",
 		"dotenv": "^8.0.0",
 		"express": "^4.17.1",
+		"jwt-decode": "^2.2.0",
 		"simple-oauth2": "^2.2.1",
 		"typescript": "^3.3.4000"
 	},
 	"devDependencies": {
 		"@types/dotenv": "^6.1.1",
 		"@types/express": "^4.16.1",
+		"@types/jwt-decode": "^2.2.1",
 		"@types/node": "^11.11.7",
+		"@types/simple-oauth2": "^2.2.1",
 		"husky": ">=1",
 		"lint-staged": ">=8",
 		"nodemon": "^1.18.10",

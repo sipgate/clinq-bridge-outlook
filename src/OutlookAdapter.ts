@@ -1,10 +1,11 @@
 import { Adapter, Config, Contact, PhoneNumberLabel } from "@clinq/bridge";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { Request } from "express";
-import { parseEnvironment } from "./config";
+import { create } from "simple-oauth2";
+import { env } from "./env";
 import { OutlookContact } from "./model";
 
-const { APP_ID, APP_PASSWORD, APP_SCOPES, REDIRECT_URI } = parseEnvironment();
+const { APP_ID, APP_PASSWORD, APP_SCOPES, REDIRECT_URI } = env;
 
 const credentials = {
 	client: {
@@ -18,13 +19,28 @@ const credentials = {
 	}
 };
 
+const getClient = (config: Config) => {
+	const [accessToken, refreshToken] = config.apiKey.split(":");
+
+	return Client.init({
+		authProvider: async done => {
+			// TODO check expired
+			const {
+				token: { access_token }
+			} = await create(credentials)
+				.accessToken.create({
+					refresh_token: refreshToken
+				})
+				.refresh();
+
+			done(null, access_token);
+		}
+	});
+};
+
 export class OutlookAdapter implements Adapter {
 	public async getContacts(config: Config): Promise<Contact[]> {
-		const client = Client.init({
-			authProvider: done => {
-				done(null, config.apiKey.split(":")[0]);
-			}
-		});
+		const client = getClient(config);
 
 		const outlookContacts = await client
 			.api("/me/contacts")
@@ -46,24 +62,21 @@ export class OutlookAdapter implements Adapter {
 	public async handleOAuth2Callback(req: Request): Promise<Config> {
 		const { code } = req.query;
 
-		const oauth2Client = require("simple-oauth2").create(credentials);
+		const oauth2Client = create(credentials);
 
 		const result = await oauth2Client.authorizationCode.getToken({
-			client_id: APP_ID,
-			client_secret: APP_PASSWORD,
 			code,
-			redirect_uri: REDIRECT_URI,
-			scope: APP_SCOPES
+			redirect_uri: REDIRECT_URI
 		});
 
-		const { access_token: accessToken, id_token: idToken } = oauth2Client.accessToken.create(result).token;
+		const {
+			token: { access_token, refresh_token }
+		} = oauth2Client.accessToken.create(result);
 
-		const config = {
-			apiKey: `${accessToken}:`,
+		return {
+			apiKey: `${access_token}:${refresh_token}`,
 			apiUrl: ""
 		};
-
-		return config;
 	}
 
 	private toClinqContact(contacts: OutlookContact[]): Contact[] {
