@@ -1,11 +1,14 @@
-import { Adapter, Config, Contact, PhoneNumberLabel } from "@clinq/bridge";
+import { Adapter, Config, Contact, PhoneNumberLabel, ContactTemplate, ContactUpdate } from "@clinq/bridge";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { Request } from "express";
 import { create } from "simple-oauth2";
 import { env } from "./env";
-import { OutlookContact } from "./model";
+import { OutlookContact, OutlookContactTemplate } from "./model";
+import jwtDecode from "jwt-decode"
 
 const { APP_ID, APP_PASSWORD, APP_SCOPES, REDIRECT_URI } = env;
+
+const TEN_MINUTES = 600;
 
 const credentials = {
 	client: {
@@ -19,27 +22,35 @@ const credentials = {
 	}
 };
 
+const refreshAccessToken = async (refreshToken: string) => {
+	const {
+		token: { access_token }
+	} = await create(credentials)
+		.accessToken.create({
+			refresh_token: refreshToken
+		})
+		.refresh();
+
+	return access_token;
+}
+
 const getClient = (config: Config) => {
 	const [accessToken, refreshToken] = config.apiKey.split(":");
 
 	return Client.init({
 		authProvider: async done => {
-			// TODO check expired
-			const {
-				token: { access_token }
-			} = await create(credentials)
-				.accessToken.create({
-					refresh_token: refreshToken
-				})
-				.refresh();
+			const { exp } = jwtDecode(accessToken);
+			const now = Math.round(new Date().getTime() / 1000);
+			const expired = (now - TEN_MINUTES) > exp
 
-			done(null, access_token);
+			done(null, expired ? await refreshAccessToken(refreshToken) : accessToken);
 		}
 	});
 };
 
+
 export class OutlookAdapter implements Adapter {
-	public async getContacts(config: Config): Promise<Contact[]> {
+	public async getContacts(config: Config) {
 		const client = getClient(config);
 
 		const outlookContacts = await client
@@ -51,11 +62,29 @@ export class OutlookAdapter implements Adapter {
 		return outlookContacts ? this.toClinqContact(outlookContacts.value) : [];
 	}
 
+	public async createContact(config: Config, contact: ContactTemplate) {
+		const client = getClient(config);
+
+		return client.api("/me/contacts").post(this.toOutlookContactTemplate(contact));
+	}
+
+	public async updateContact(config: Config, id: string, contact: ContactUpdate) {
+		const client = getClient(config);
+
+		return client.api(`/me/contacts/${id}`).patch(this.toOutlookContactTemplate(contact));
+	}
+
+	public async deleteContact(config: Config, id: string) {
+		const client = getClient(config);
+
+		return client.api(`/me/contacts/${id}`).delete();
+	}
+
 	public async getOAuth2RedirectUrl(): Promise<string> {
 		const host = credentials.auth.tokenHost;
 		const path = credentials.auth.authorizePath;
 		const scopes = APP_SCOPES.split(" ").join("+");
-		const callbackUri = encodeURI(REDIRECT_URI);
+		const callbackUri = encodeURIComponent(REDIRECT_URI);
 		return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
 	}
 
@@ -79,6 +108,27 @@ export class OutlookAdapter implements Adapter {
 		};
 	}
 
+	private toOutlookContactTemplate(contact: ContactTemplate) : OutlookContactTemplate {
+		const filterPhoneNumbers = (label: PhoneNumberLabel) =>
+			contact.phoneNumbers.filter(phoneNumber => (phoneNumber.label === label))
+				.map(phoneNumber => phoneNumber.phoneNumber);
+
+		const businessPhones = filterPhoneNumbers(PhoneNumberLabel.WORK);
+		const homePhones = filterPhoneNumbers(PhoneNumberLabel.HOME);
+		const mobilePhone = filterPhoneNumbers(PhoneNumberLabel.MOBILE).find(e => true);
+
+		return {
+			displayName: contact.name || "",
+			givenName: contact.firstName || "",
+			surname: contact.lastName || "",
+			companyName: contact.organization || "",
+			emailAddresses: contact.email ? [{name: contact.email, address: contact.email}] : [],
+			businessPhones,
+			homePhones,
+			mobilePhone: mobilePhone || ""
+		}
+	}
+
 	private toClinqContact(contacts: OutlookContact[]): Contact[] {
 		return contacts.map(contact => {
 			const email = contact.emailAddresses.find(Boolean);
@@ -100,11 +150,11 @@ export class OutlookAdapter implements Adapter {
 					})),
 					...(contact.mobilePhone
 						? [
-								{
-									label: PhoneNumberLabel.MOBILE,
-									phoneNumber: contact.mobilePhone
-								}
-						  ]
+							{
+								label: PhoneNumberLabel.MOBILE,
+								phoneNumber: contact.mobilePhone
+							}
+						]
 						: [])
 				],
 				contactUrl: "",
