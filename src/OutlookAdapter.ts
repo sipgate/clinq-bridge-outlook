@@ -58,19 +58,23 @@ export class OutlookAdapter implements Adapter {
 			.orderby("givenName ASC")
 			.get();
 
-		return outlookContacts ? this.toClinqContact(outlookContacts.value) : [];
+		return outlookContacts ? outlookContacts.value.map(this.toClinqContact) : [];
 	}
 
 	public async createContact(config: Config, contact: ContactTemplate) {
 		const client = getClient(config);
 
-		return client.api("/me/contacts").post(this.toOutlookContactTemplate(contact));
+		const created = await client.api("/me/contacts").post(this.toOutlookContactTemplate(contact));
+
+		return this.toClinqContact(created);
 	}
 
 	public async updateContact(config: Config, id: string, contact: ContactUpdate) {
 		const client = getClient(config);
 
-		return client.api(`/me/contacts/${id}`).patch(this.toOutlookContactTemplate(contact));
+		const updated = await client.api(`/me/contacts/${id}`).patch(this.toOutlookContactTemplate(contact));
+
+		return this.toClinqContact(updated);
 	}
 
 	public async deleteContact(config: Config, id: string) {
@@ -130,37 +134,35 @@ export class OutlookAdapter implements Adapter {
 		};
 	}
 
-	private toClinqContact(contacts: OutlookContact[]): Contact[] {
-		return contacts.map(contact => {
-			const email = contact.emailAddresses.find(Boolean);
-			return {
-				id: contact.id,
-				name: contact.displayName,
-				firstName: contact.givenName,
-				lastName: contact.surname,
-				email: email ? email.address : null,
-				organization: contact.companyName,
-				phoneNumbers: [
-					...contact.homePhones.map(phoneNumber => ({
-						label: PhoneNumberLabel.HOME,
-						phoneNumber
-					})),
-					...contact.businessPhones.map(phoneNumber => ({
-						label: PhoneNumberLabel.WORK,
-						phoneNumber
-					})),
-					...(contact.mobilePhone
-						? [
-								{
-									label: PhoneNumberLabel.MOBILE,
-									phoneNumber: contact.mobilePhone
-								}
-						  ]
-						: [])
-				],
-				contactUrl: "",
-				avatarUrl: ""
-			};
-		});
+	private toClinqContact(contact: OutlookContact): Contact {
+		const email = contact.emailAddresses.find(Boolean);
+		return {
+			id: contact.id,
+			name: contact.displayName || null,
+			firstName: contact.givenName || null,
+			lastName: contact.surname || null,
+			email: email ? email.address : null,
+			organization: contact.companyName || null,
+			phoneNumbers: [
+				...contact.homePhones.map(phoneNumber => ({
+					label: PhoneNumberLabel.HOME,
+					phoneNumber
+				})),
+				...contact.businessPhones.map(phoneNumber => ({
+					label: PhoneNumberLabel.WORK,
+					phoneNumber
+				})),
+				...(contact.mobilePhone
+					? [
+							{
+								label: PhoneNumberLabel.MOBILE,
+								phoneNumber: contact.mobilePhone
+							}
+					  ]
+					: [])
+			],
+			contactUrl: null,
+			avatarUrl: null
+		};
 	}
 }
