@@ -15,6 +15,8 @@ const credentials = {
 	}
 };
 
+const jwtDecode = require('jwt-decode');
+
 export class OutlookAdapter implements Adapter {
 
 	private toClinqContact(contacts: OutlookContact[]): Contact[] {
@@ -48,9 +50,13 @@ export class OutlookAdapter implements Adapter {
 
 		const graph = require('@microsoft/microsoft-graph-client');
 
+		const [accessToken, refreshToken] = config.apiKey.split(":");
+
+		// check access token validity
+
 		const client = graph.Client.init({
 			authProvider: (done) => {
-				done(null, config.apiKey.split(":")[0]);
+				done(null, accessToken);
 			}
 		});
 
@@ -86,10 +92,17 @@ export class OutlookAdapter implements Adapter {
 			scope: process.env.APP_SCOPES
 		});
 
-		const {access_token: accessToken, id_token: idToken} = oauth2Client.accessToken.create(result).token;
+		const {access_token: accessToken, refresh_token: refreshToken} = oauth2Client.accessToken.create(result).token;
+
+		const {exp}  = jwtDecode(accessToken);
+		const now = Math.round(new Date().getTime() / 1000);
+
+		if ((now - exp) < 215400) {
+			const newToken = await oauth2Client.accessToken.create({refresh_token: refreshToken}).refresh();
+		}
 
 		const config = {
-			apiKey: `${accessToken}:`,
+			apiKey: `${accessToken}:${refreshToken}`,
 			apiUrl: "",
 		};
 
