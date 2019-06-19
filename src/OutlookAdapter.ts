@@ -1,10 +1,10 @@
-import { Adapter, Config, Contact, PhoneNumberLabel, ContactTemplate, ContactUpdate } from "@clinq/bridge";
+import { Adapter, Config, Contact, ContactTemplate, ContactUpdate, PhoneNumberLabel } from "@clinq/bridge";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { Request } from "express";
+import jwtDecode from "jwt-decode";
 import { create } from "simple-oauth2";
 import { env } from "./env";
 import { OutlookContact, OutlookContactTemplate } from "./model";
-import jwtDecode from "jwt-decode"
 
 const { APP_ID, APP_PASSWORD, APP_SCOPES, REDIRECT_URI } = env;
 
@@ -32,7 +32,7 @@ const refreshAccessToken = async (refreshToken: string) => {
 		.refresh();
 
 	return access_token;
-}
+};
 
 const getClient = (config: Config) => {
 	const [accessToken, refreshToken] = config.apiKey.split(":");
@@ -41,13 +41,12 @@ const getClient = (config: Config) => {
 		authProvider: async done => {
 			const { exp } = jwtDecode(accessToken);
 			const now = Math.round(new Date().getTime() / 1000);
-			const expired = (now - TEN_MINUTES) > exp
+			const expired = now - TEN_MINUTES > exp;
 
 			done(null, expired ? await refreshAccessToken(refreshToken) : accessToken);
 		}
 	});
 };
-
 
 export class OutlookAdapter implements Adapter {
 	public async getContacts(config: Config) {
@@ -108,9 +107,10 @@ export class OutlookAdapter implements Adapter {
 		};
 	}
 
-	private toOutlookContactTemplate(contact: ContactTemplate) : OutlookContactTemplate {
+	private toOutlookContactTemplate(contact: ContactTemplate): OutlookContactTemplate {
 		const filterPhoneNumbers = (label: PhoneNumberLabel) =>
-			contact.phoneNumbers.filter(phoneNumber => (phoneNumber.label === label))
+			contact.phoneNumbers
+				.filter(phoneNumber => phoneNumber.label === label)
 				.map(phoneNumber => phoneNumber.phoneNumber);
 
 		const businessPhones = filterPhoneNumbers(PhoneNumberLabel.WORK);
@@ -122,11 +122,11 @@ export class OutlookAdapter implements Adapter {
 			givenName: contact.firstName || "",
 			surname: contact.lastName || "",
 			companyName: contact.organization || "",
-			emailAddresses: contact.email ? [{name: contact.email, address: contact.email}] : [],
+			emailAddresses: contact.email ? [{ name: contact.email, address: contact.email }] : [],
 			businessPhones,
 			homePhones,
 			mobilePhone: mobilePhone || ""
-		}
+		};
 	}
 
 	private toClinqContact(contacts: OutlookContact[]): Contact[] {
@@ -150,11 +150,11 @@ export class OutlookAdapter implements Adapter {
 					})),
 					...(contact.mobilePhone
 						? [
-							{
-								label: PhoneNumberLabel.MOBILE,
-								phoneNumber: contact.mobilePhone
-							}
-						]
+								{
+									label: PhoneNumberLabel.MOBILE,
+									phoneNumber: contact.mobilePhone
+								}
+						  ]
 						: [])
 				],
 				contactUrl: "",
