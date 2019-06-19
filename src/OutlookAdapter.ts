@@ -115,10 +115,10 @@ export class OutlookAdapter implements Adapter {
 
 		const businessPhones = filterPhoneNumbers(PhoneNumberLabel.WORK);
 		const homePhones = filterPhoneNumbers(PhoneNumberLabel.HOME);
-		const mobilePhone = filterPhoneNumbers(PhoneNumberLabel.MOBILE).find(e => true);
+		const mobilePhone = filterPhoneNumbers(PhoneNumberLabel.MOBILE).find(Boolean);
 
 		return {
-			displayName: contact.name || "",
+			displayName: `${contact.firstName} ${contact.lastName}`,
 			givenName: contact.firstName || "",
 			surname: contact.lastName || "",
 			companyName: contact.organization || "",
