@@ -6,3 +6,6 @@ yarn-error.log
 
 #TypeScript
 dist/
+
+# Environment
+env.sh

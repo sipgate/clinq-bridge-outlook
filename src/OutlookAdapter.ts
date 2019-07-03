@@ -1,14 +1,11 @@
 import { Adapter, Config, Contact, ContactTemplate, ContactUpdate, PhoneNumberLabel } from "@clinq/bridge";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { Request } from "express";
-import jwtDecode from "jwt-decode";
 import { create } from "simple-oauth2";
 import { env } from "./env";
 import { OutlookContact, OutlookContactTemplate } from "./model";
 
 const { APP_ID, APP_PASSWORD, APP_SCOPES, REDIRECT_URI } = env;
-
-const TEN_MINUTES = 600;
 
 const credentials = {
 	client: {
@@ -35,15 +32,16 @@ const refreshAccessToken = async (refreshToken: string) => {
 };
 
 const getClient = (config: Config) => {
-	const [accessToken, refreshToken] = config.apiKey.split(":");
+	const [, refreshToken] = config.apiKey.split(":");
 
 	return Client.init({
 		authProvider: async done => {
-			const { exp } = jwtDecode(accessToken);
-			const now = Math.round(new Date().getTime() / 1000);
-			const expired = now - TEN_MINUTES > exp;
-
-			done(null, expired ? await refreshAccessToken(refreshToken) : accessToken);
+			try {
+				const token = await refreshAccessToken(refreshToken);
+				done(null, token);
+			} catch (error) {
+				done(error, null);
+			}
 		}
 	});
 };

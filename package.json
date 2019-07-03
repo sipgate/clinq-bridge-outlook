@@ -22,7 +22,6 @@
 		"axios": "^0.18.0",
 		"dotenv": "^8.0.0",
 		"express": "^4.17.1",
-		"jwt-decode": "^2.2.0",
 		"simple-oauth2": "^2.2.1",
 		"typescript": "^3.3.4000"
 	},
