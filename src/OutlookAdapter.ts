@@ -1,9 +1,9 @@
-import { Adapter, Config, Contact, ContactTemplate, ContactUpdate, PhoneNumberLabel } from "@clinq/bridge";
+import { Adapter, Config, Contact, PhoneNumberLabel } from "@clinq/bridge";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { Request } from "express";
 import { create } from "simple-oauth2";
 import { env } from "./env";
-import { OutlookContact, OutlookContactTemplate } from "./model";
+import { IOutlookContact, IOutlookPeople, PersonType } from "./model";
 
 const { APP_ID, APP_PASSWORD, APP_SCOPES, REDIRECT_URI } = env;
 
@@ -50,30 +50,44 @@ export class OutlookAdapter implements Adapter {
 	public async getContacts(config: Config) {
 		const client = getClient(config);
 
-		const outlookContacts = await client
-			.api("/me/contacts")
-			.select("id,givenName,surname,emailAddresses,companyName,displayName,businessPhones,homePhones,mobilePhone")
+		const outlookPeople = await client
+			.api("/me/people")
 			.orderby("givenName ASC")
 			.get();
 
-		return outlookContacts ? outlookContacts.value.map(this.toClinqContact) : [];
+		const outlookContacts = await client
+			.api("/me/contacts")
+			.orderby("givenName ASC")
+			.get();
+
+		// console.log(JSON.stringify({ outlookPeople, outlookContacts }, null, 2));
+
+		const peoples = outlookPeople
+			? outlookPeople.value
+					.filter((c: IOutlookPeople) => c.personType.class === PersonType.PERSON)
+					.map(this.peopletoClinqContact)
+			: [];
+
+		const contacts = outlookContacts ? outlookContacts.value.map(this.contactToClinqContact) : [];
+
+		return peoples.concat(contacts);
 	}
 
-	public async createContact(config: Config, contact: ContactTemplate) {
-		const client = getClient(config);
+	// public async createContact(config: Config, contact: ContactTemplate) {
+	// 	const client = getClient(config);
 
-		const created = await client.api("/me/contacts").post(this.toOutlookContactTemplate(contact));
+	// 	const created = await client.api("/me/contacts").post(this.toOutlookContactTemplate(contact));
 
-		return this.toClinqContact(created);
-	}
+	// 	return this.peopletoClinqContact(created);
+	// }
 
-	public async updateContact(config: Config, id: string, contact: ContactUpdate) {
-		const client = getClient(config);
+	// public async updateContact(config: Config, id: string, contact: ContactUpdate) {
+	// 	const client = getClient(config);
 
-		const updated = await client.api(`/me/contacts/${id}`).patch(this.toOutlookContactTemplate(contact));
+	// 	const updated = await client.api(`/me/contacts/${id}`).patch(this.toOutlookContactTemplate(contact));
 
-		return this.toClinqContact(updated);
-	}
+	// 	return this.peopletoClinqContact(updated);
+	// }
 
 	public async deleteContact(config: Config, id: string) {
 		const client = getClient(config);
@@ -109,30 +123,28 @@ export class OutlookAdapter implements Adapter {
 		};
 	}
 
-	private toOutlookContactTemplate(contact: ContactTemplate): OutlookContactTemplate {
-		const filterPhoneNumbers = (label: PhoneNumberLabel) =>
-			contact.phoneNumbers
-				.filter(phoneNumber => phoneNumber.label === label)
-				.map(phoneNumber => phoneNumber.phoneNumber);
+	// private toOutlookContactTemplate(contact: ContactTemplate): OutlookContactTemplate {
+	// 	// const filterPhoneNumbers = (label: PhoneNumberLabel) =>
+	// 	// 	contact.phoneNumbers
+	// 	// 		.filter(phoneNumber => phoneNumber.label === label)
+	// 	// 		.map(phoneNumber => phoneNumber.phoneNumber);
 
-		const businessPhones = filterPhoneNumbers(PhoneNumberLabel.WORK);
-		const homePhones = filterPhoneNumbers(PhoneNumberLabel.HOME);
-		const mobilePhone = filterPhoneNumbers(PhoneNumberLabel.MOBILE).find(Boolean);
-		const displayName = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
+	// 	// const businessPhones = filterPhoneNumbers(PhoneNumberLabel.WORK);
+	// 	// const homePhones = filterPhoneNumbers(PhoneNumberLabel.HOME);
+	// 	// const mobilePhone = filterPhoneNumbers(PhoneNumberLabel.MOBILE).find(Boolean);
+	// 	const displayName = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
 
-		return {
-			displayName,
-			givenName: contact.firstName || "",
-			surname: contact.lastName || "",
-			companyName: contact.organization || "",
-			emailAddresses: contact.email ? [{ name: contact.email, address: contact.email }] : [],
-			businessPhones,
-			homePhones,
-			mobilePhone: mobilePhone || ""
-		};
-	}
+	// 	return {
+	// 		displayName,
+	// 		givenName: contact.firstName || "",
+	// 		surname: contact.lastName || "",
+	// 		companyName: contact.organization || "",
+	// 		scoredEmailAddresses: contact.email ? [{ address: contact.email }] : [],
+	// 		phones: []
+	// 	};
+	// }
 
-	private toClinqContact(contact: OutlookContact): Contact {
+	private contactToClinqContact(contact: IOutlookContact): Contact {
 		const email = contact.emailAddresses.find(Boolean);
 		return {
 			id: contact.id,
@@ -145,19 +157,27 @@ export class OutlookAdapter implements Adapter {
 				...contact.homePhones.map(phoneNumber => ({
 					label: PhoneNumberLabel.HOME,
 					phoneNumber
-				})),
-				...contact.businessPhones.map(phoneNumber => ({
-					label: PhoneNumberLabel.WORK,
-					phoneNumber
-				})),
-				...(contact.mobilePhone
-					? [
-							{
-								label: PhoneNumberLabel.MOBILE,
-								phoneNumber: contact.mobilePhone
-							}
-					  ]
-					: [])
+				}))
+			],
+			contactUrl: null,
+			avatarUrl: null
+		};
+	}
+
+	private peopletoClinqContact(contact: IOutlookPeople): Contact {
+		const email = contact.scoredEmailAddresses.find(Boolean);
+		return {
+			id: contact.id,
+			name: contact.displayName || null,
+			firstName: contact.givenName || null,
+			lastName: contact.surname || null,
+			email: email ? email.address : null,
+			organization: contact.companyName || null,
+			phoneNumbers: [
+				...contact.phones.map(phoneNumber => ({
+					label: PhoneNumberLabel.HOME,
+					phoneNumber: phoneNumber.number
+				}))
 			],
 			contactUrl: null,
 			avatarUrl: null
