@@ -50,27 +50,33 @@ export class OutlookAdapter implements Adapter {
 	public async getContacts(config: Config) {
 		const client = getClient(config);
 
-		const outlookPeople = await client
+		const peoplePromise = client
 			.api("/me/people")
 			.orderby("givenName ASC")
 			.get();
 
-		const outlookContacts = await client
+		const contactsPromise = client
 			.api("/me/contacts")
 			.orderby("givenName ASC")
 			.get();
 
-		// console.log(JSON.stringify({ outlookPeople, outlookContacts }, null, 2));
+		const [outlookPeople, outlookContacts] = await Promise.all([peoplePromise, contactsPromise]);
 
-		const peoples = outlookPeople
+		// tslint:disable-next-line:no-console
+		console.log(JSON.stringify({ outlookPeople, outlookContacts }, null, 2));
+
+		const unwantedNames = ["Microsoft Audio Conferencing", "Office 365 Message Center"];
+
+		const people = outlookPeople
 			? outlookPeople.value
+					.filter((c: IOutlookPeople) => !unwantedNames.includes(c.displayName))
 					.filter((c: IOutlookPeople) => c.personType.class === PersonType.PERSON)
-					.map(this.peopletoClinqContact)
+					.map(this.peopleToClinqContact)
 			: [];
 
 		const contacts = outlookContacts ? outlookContacts.value.map(this.contactToClinqContact) : [];
 
-		return peoples.concat(contacts);
+		return people.concat(contacts);
 	}
 
 	// public async createContact(config: Config, contact: ContactTemplate) {
@@ -157,14 +163,26 @@ export class OutlookAdapter implements Adapter {
 				...contact.homePhones.map(phoneNumber => ({
 					label: PhoneNumberLabel.HOME,
 					phoneNumber
-				}))
+				})),
+				...contact.businessPhones.map(phoneNumber => ({
+					label: PhoneNumberLabel.WORK,
+					phoneNumber
+				})),
+				...(contact.mobilePhone
+					? [
+							{
+								label: PhoneNumberLabel.MOBILE,
+								phoneNumber: contact.mobilePhone
+							}
+					  ]
+					: [])
 			],
 			contactUrl: null,
 			avatarUrl: null
 		};
 	}
 
-	private peopletoClinqContact(contact: IOutlookPeople): Contact {
+	private peopleToClinqContact(contact: IOutlookPeople): Contact {
 		const email = contact.scoredEmailAddresses.find(Boolean);
 		return {
 			id: contact.id,
