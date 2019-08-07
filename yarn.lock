@@ -18,10 +18,10 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@clinq/bridge@^10.0.8":
-  version "10.0.8"
-  resolved "https://registry.yarnpkg.com/@clinq/bridge/-/bridge-10.0.8.tgz#ddf4db84ff4bc776c1cef10dae3175e3ac8945e0"
-  integrity sha512-knBlvv5QVzz1aqUClF6Pbu5A2+IQ3wu7MwVKP3+04/uY63ehkyZdjSeaSXnsDDSAqVH6wPR3wbM0vTVCplBP3g==
+"@clinq/bridge@^10.1.2":
+  version "10.1.2"
+  resolved "https://registry.yarnpkg.com/@clinq/bridge/-/bridge-10.1.2.tgz#af4dd172721ce971e3c76246e89470d8b20709e6"
+  integrity sha512-usiToZL2qArsCfxa+SN6CF02vUNc0zL/lVBENChi8Jtc2T8jTLtP5wx35FzIxFWmiHMxrzkjcZoZV7NJLC+SEg==
   dependencies:
     ajv "^6.10.0"
     axios "^0.19.0"

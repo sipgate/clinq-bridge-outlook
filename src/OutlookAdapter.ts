@@ -89,7 +89,7 @@ export class OutlookAdapter implements Adapter {
 		return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
 	}
 
-	public async handleOAuth2Callback(req: Request): Promise<Config> {
+	public async handleOAuth2Callback(req: Request): Promise<{ apiKey: string; apiUrl: string }> {
 		const { code } = req.query;
 
 		const oauth2Client = create(credentials);
