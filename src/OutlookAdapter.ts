@@ -7,24 +7,26 @@ import { OutlookContact, OutlookContactTemplate } from "./model";
 
 const { APP_ID, APP_PASSWORD, APP_SCOPES, REDIRECT_URI } = env;
 
+const PAGE_SIZE = 100;
+
 const credentials = {
 	client: {
 		id: APP_ID,
-		secret: APP_PASSWORD
+		secret: APP_PASSWORD,
 	},
 	auth: {
 		tokenHost: "https://login.microsoftonline.com",
 		authorizePath: "common/oauth2/v2.0/authorize",
-		tokenPath: "common/oauth2/v2.0/token"
-	}
+		tokenPath: "common/oauth2/v2.0/token",
+	},
 };
 
 const refreshAccessToken = async (refreshToken: string) => {
 	const {
-		token: { access_token }
+		token: { access_token },
 	} = await create(credentials)
 		.accessToken.create({
-			refresh_token: refreshToken
+			refresh_token: refreshToken,
 		})
 		.refresh();
 
@@ -35,28 +37,38 @@ const getClient = (config: Config) => {
 	const [, refreshToken] = config.apiKey.split(":");
 
 	return Client.init({
-		authProvider: async done => {
+		authProvider: async (done) => {
 			try {
 				const token = await refreshAccessToken(refreshToken);
 				done(null, token);
 			} catch (error) {
 				done(error, null);
 			}
-		}
+		},
 	});
 };
 
 export class OutlookAdapter implements Adapter {
-	public async getContacts(config: Config) {
-		const client = getClient(config);
-
-		const outlookContacts = await client
+	public async getContactsPage(client: Client, contacts: any[] = []): Promise<Contact[]> {
+		const response = await client
 			.api("/me/contacts")
+			.skip(contacts.length)
+			.top(PAGE_SIZE)
 			.select("id,givenName,surname,emailAddresses,companyName,displayName,businessPhones,homePhones,mobilePhone")
 			.orderby("givenName ASC")
 			.get();
 
-		return outlookContacts ? outlookContacts.value.map(this.toClinqContact) : [];
+		const merged = response ? [...response.value, ...contacts] : contacts;
+
+		if (response && response.value.length === PAGE_SIZE) {
+			return this.getContactsPage(client, merged);
+		}
+
+		return merged.map(this.toClinqContact);
+	}
+
+	public async getContacts(config: Config): Promise<Contact[]> {
+		return this.getContactsPage(getClient(config));
 	}
 
 	public async createContact(config: Config, contact: ContactTemplate) {
@@ -96,24 +108,24 @@ export class OutlookAdapter implements Adapter {
 
 		const result = await oauth2Client.authorizationCode.getToken({
 			code,
-			redirect_uri: REDIRECT_URI
+			redirect_uri: REDIRECT_URI,
 		});
 
 		const {
-			token: { access_token, refresh_token }
+			token: { access_token, refresh_token },
 		} = oauth2Client.accessToken.create(result);
 
 		return {
 			apiKey: `${access_token}:${refresh_token}`,
-			apiUrl: ""
+			apiUrl: "",
 		};
 	}
 
 	private toOutlookContactTemplate(contact: ContactTemplate): OutlookContactTemplate {
 		const filterPhoneNumbers = (label: PhoneNumberLabel) =>
 			contact.phoneNumbers
-				.filter(phoneNumber => phoneNumber.label === label)
-				.map(phoneNumber => phoneNumber.phoneNumber);
+				.filter((phoneNumber) => phoneNumber.label === label)
+				.map((phoneNumber) => phoneNumber.phoneNumber);
 
 		const businessPhones = filterPhoneNumbers(PhoneNumberLabel.WORK);
 		const homePhones = filterPhoneNumbers(PhoneNumberLabel.HOME);
@@ -128,7 +140,7 @@ export class OutlookAdapter implements Adapter {
 			emailAddresses: contact.email ? [{ name: contact.email, address: contact.email }] : [],
 			businessPhones,
 			homePhones,
-			mobilePhone: mobilePhone || ""
+			mobilePhone: mobilePhone || "",
 		};
 	}
 
@@ -142,25 +154,25 @@ export class OutlookAdapter implements Adapter {
 			email: email ? email.address : null,
 			organization: contact.companyName || null,
 			phoneNumbers: [
-				...contact.homePhones.map(phoneNumber => ({
+				...contact.homePhones.map((phoneNumber) => ({
 					label: PhoneNumberLabel.HOME,
-					phoneNumber
+					phoneNumber,
 				})),
-				...contact.businessPhones.map(phoneNumber => ({
+				...contact.businessPhones.map((phoneNumber) => ({
 					label: PhoneNumberLabel.WORK,
-					phoneNumber
+					phoneNumber,
 				})),
 				...(contact.mobilePhone
 					? [
 							{
 								label: PhoneNumberLabel.MOBILE,
-								phoneNumber: contact.mobilePhone
-							}
+								phoneNumber: contact.mobilePhone,
+							},
 					  ]
-					: [])
+					: []),
 			],
 			contactUrl: null,
-			avatarUrl: null
+			avatarUrl: null,
 		};
 	}
 }

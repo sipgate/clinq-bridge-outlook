@@ -1,3 +1,4 @@
+import "isomorphic-fetch";
 import { start } from "@clinq/bridge";
 import { OutlookAdapter } from "./OutlookAdapter";
 

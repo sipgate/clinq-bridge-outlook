@@ -1,4 +1,5 @@
 import { config as dotenvConfig } from "dotenv";
+
 dotenvConfig();
 
 const APP_ID = process.env.APP_ID;
