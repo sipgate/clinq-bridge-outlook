@@ -48,7 +48,7 @@ spec:
             - name: OAUTH_IDENTIFIER
               value: OUTLOOK
             - name: REDIRECT_URI
-              value: https://outlook-contacts.bridge.clinq.com/oauth2/callback
+              value: https://$DOMAIN/oauth2/callback
             - name: APP_ID
               value: 0f1c9f10-310b-4b00-a7ab-a420a53e6c95
             - name: APP_SCOPES
