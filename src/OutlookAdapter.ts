@@ -1,4 +1,4 @@
-import { Adapter, Config, Contact, ContactTemplate, ContactUpdate, PhoneNumberLabel } from "@clinq/bridge";
+import { Adapter, Config, Contact, ContactTemplate, ContactUpdate, PhoneNumberLabel, ServerError } from "@clinq/bridge";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { Request } from "express";
 import { create } from "simple-oauth2";
@@ -103,6 +103,10 @@ export class OutlookAdapter implements Adapter {
 
 	public async handleOAuth2Callback(req: Request): Promise<{ apiKey: string; apiUrl: string }> {
 		const { code } = req.query;
+
+		if (typeof code !== "string") {
+			throw new ServerError(400, "Invalid code");
+		}
 
 		const oauth2Client = create(credentials);
 
