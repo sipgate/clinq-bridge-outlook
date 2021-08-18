@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $APP
+  labels:
+    app: $APP
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: $APP
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: $APP
+    spec:
+      containers:
+        - name: $APP
+          image: $IMAGE
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 200m
+              memory: 400Mi
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            initialDelaySeconds: 30
+            httpGet:
+              path: /health
+              port: 8080
+          readinessProbe:
+            initialDelaySeconds: 30
+            httpGet:
+              path: /health
+              port: 8080
+          env:
+            - name: REDIS_URL
+              value: rediss://10.102.0.11:6378
+            - name: OAUTH_IDENTIFIER
+              value: OUTLOOK
+            - name: REDIRECT_URI
+              value: https://outlook-contacts.bridge.clinq.com/oauth2/callback
+            - name: APP_ID
+              value: 0f1c9f10-310b-4b00-a7ab-a420a53e6c95
+            - name: APP_SCOPES
+              value: "openid profile offline_access Contacts.ReadWrite Contacts.ReadWrite.Shared"
+            - name: APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: $APP
+                  key: app-password
