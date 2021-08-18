@@ -3,7 +3,7 @@
 set -e
 
 export GITHUB_SHA=$(git rev-parse --short HEAD)
-export APP="clinq-bridge-outlook-contacts"
+export APP="clinq-bridge-outlook"
 export IMAGE="eu.gcr.io/integrations-174012/$APP:latest"
 export DOMAIN="outlook-contacts.bridge.clinq.com"
 
