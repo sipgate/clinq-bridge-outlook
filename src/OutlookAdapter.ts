@@ -50,6 +50,9 @@ const getClient = (config: Config) => {
 
 export class OutlookAdapter implements Adapter {
 	public async getContactsPage(client: Client, contacts: any[] = []): Promise<Contact[]> {
+
+		console.log("fetching next page");
+
 		const response = await client
 			.api("/me/contacts")
 			.skip(contacts.length)
@@ -60,14 +63,19 @@ export class OutlookAdapter implements Adapter {
 
 		const merged = response ? [...response.value, ...contacts] : contacts;
 
+		console.log(`fetched ${response.value.length} contacts - got total of ${merged.length} contacts so far`);
+
 		if (response && response.value.length === PAGE_SIZE) {
 			return this.getContactsPage(client, merged);
 		}
+
+		console.log(`fetched all pages, returning ${merged.length} contacts`)
 
 		return merged.map(this.toClinqContact);
 	}
 
 	public async getContacts(config: Config): Promise<Contact[]> {
+		console.log("fetching contacts");
 		return this.getContactsPage(getClient(config));
 	}
 
