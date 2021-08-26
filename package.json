@@ -16,7 +16,8 @@
     "precommit": "lint-staged",
     "build": "tsc",
     "start": "ts-node src/index.ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "lint": "eslint 'src/**/*.ts' --fix"
   },
   "dependencies": {
     "@clinq/bridge": "^11.3.1",
@@ -36,12 +37,16 @@
     "@types/jwt-decode": "^2.2.1",
     "@types/node": "^16.6.1",
     "@types/simple-oauth2": "^2.5.2",
+    "@typescript-eslint/eslint-plugin": "^4.29.3",
+    "@typescript-eslint/parser": "^4.29.3",
+    "eslint": "^7.32.0",
     "lint-staged": "^11.1.2",
     "prettier": "^2.3.2",
     "ts-node": "^10.2.1"
   },
   "lint-staged": {
     "*.{ts}": [
+      "eslint --fix",
       "prettier --write",
       "git add"
     ],
