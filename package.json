@@ -1,61 +1,53 @@
 {
-	"name": "clinq-bridge-outlook",
-	"version": "1.0.0",
-	"private": true,
-	"description": "CLINQ Bridge for outlook",
-	"main": "dist/index.js",
-	"repository": "git@github.com:sipgate/clinq-bridge-outlook.git",
-	"contributors": [
-		{
-			"name": "CLINQ",
-			"email": "hello@clinq.com"
-		}
-	],
-	"license": "Apache-2.0",
-	"scripts": {
-		"prepare": "husky install",
-		"build": "tsc",
-		"start": "env-cmd -f .env ts-node-dev src/index.ts"
-	},
-	"dependencies": {
-		"@clinq/bridge": "^11.2.4",
-		"@microsoft/microsoft-graph-client": "^2.0.0",
-		"axios": "^0.21.1",
-		"dotenv": "^10.0.0",
-		"env-cmd": "^10.1.0",
-		"husky": "^7.0.1",
-		"express": "^4.17.1",
-		"isomorphic-fetch": "^2.2.1",
-		"simple-oauth2": "^3.4.0",
-		"typescript": "^4.3.5"
-	},
-	"devDependencies": {
-		"@types/dotenv": "^8.2.0",
-		"@types/express": "^4.17.13",
-		"@types/jwt-decode": "^2.2.1",
-		"@types/node": "^16.6.1",
-		"@types/simple-oauth2": "^2.5.2",
-		"lint-staged": ">=11.1.2",
-		"nodemon": "^2.0.12",
-		"path": "^0.12.7",
-		"prettier": "^2.3.2",
-		"ts-jest": "^27.0.5",
-		"ts-node": "^10.2.0",
-		"ts-node-dev": "^1.1.8"
-	},
-	"husky": {
-		"hooks": {
-			"pre-commit": "lint-staged"
-		}
-	},
-	"lint-staged": {
-		"*.{ts}": [
-			"prettier --write",
-			"git add"
-		],
-		"*.{json,md}": [
-			"prettier --write",
-			"git add"
-		]
-	}
+  "name": "clinq-bridge-outlook",
+  "private": true,
+  "description": "CLINQ Bridge for outlook",
+  "main": "dist/index.js",
+  "repository": "git@github.com:sipgate/clinq-bridge-outlook.git",
+  "contributors": [
+    {
+      "name": "CLINQ",
+      "email": "hello@clinq.com"
+    }
+  ],
+  "license": "Apache-2.0",
+  "scripts": {
+    "prepare": "husky install",
+    "precommit": "lint-staged",
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@clinq/bridge": "^11.3.1",
+    "@microsoft/microsoft-graph-client": "^2.0.0",
+    "axios": "^0.21.1",
+    "dotenv": "^10.0.0",
+    "env-cmd": "^10.1.0",
+    "husky": "^7.0.2",
+    "express": "^4.17.1",
+    "isomorphic-fetch": "^2.2.1",
+    "simple-oauth2": "^3.4.0",
+    "typescript": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.0",
+    "@types/express": "^4.17.13",
+    "@types/jwt-decode": "^2.2.1",
+    "@types/node": "^16.6.1",
+    "@types/simple-oauth2": "^2.5.2",
+    "lint-staged": "^11.1.2",
+    "prettier": "^2.3.2",
+    "ts-node": "^10.2.1"
+  },
+  "lint-staged": {
+    "*.{ts}": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.{json,md}": [
+      "prettier --write",
+      "git add"
+    ]
+  }
 }
