@@ -8,7 +8,7 @@ metadata:
     cert-manager.io/issuer: "letsencrypt-production"
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "x-provider-locale,x-provider-url,x-provider-key,authorization,content-type,x-clinq-organizationid,x-clinq-userid"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "x-provider-locale,x-provider-url,x-provider-key,authorization,content-type,x-clinq-organization,x-clinq-user,x-clinq-key,x-clinq-apiurl"
     nginx.ingress.kubernetes.io/cors-exposed-headers: "x-provider-locale,x-provider-url,x-provider-key,authorization,content-type"
 spec:
   tls:
