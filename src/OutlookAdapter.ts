@@ -1,5 +1,6 @@
 import {
   Adapter,
+  ClinqBetaEnvironment,
   Config,
   Contact,
   ContactTemplate,
@@ -132,21 +133,24 @@ export class OutlookAdapter implements Adapter {
     const scopes = APP_SCOPES.split(" ").join("+");
     const callbackUri = encodeURIComponent(REDIRECT_URI);
 
-    if (urlConfig && urlConfig.clinqEnvironment) {
-      const redirectUrl =
-        urlConfig.clinqEnvironment === "live"
-          ? "https://dev.phone.clinq.app/settings/oauth2"
-          : "https://app.local.clinq.com:3000/settings/oauth2";
+    const clinqEnvironment = urlConfig && urlConfig.clinqEnvironment;
 
-      return `${host}/${path}?redirect_uri=${encodeURIComponent(
-        redirectUrl
-      )}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
-    }
-    return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
+    return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}&clinq_environment=${clinqEnvironment}`;
   }
 
+  private getRedirectURL = (clinqEnvironment?: ClinqBetaEnvironment) => {
+    if (clinqEnvironment) {
+      return clinqEnvironment === "live"
+        ? "https://dev.phone.clinq.app/settings/oauth2"
+        : "https://app.local.clinq.com:3000/settings/oauth2";
+    }
+
+    return REDIRECT_URI;
+  };
+
   public async handleOAuth2Callback(
-    req: Request
+    req: Request,
+    clinqEnvironment?: ClinqBetaEnvironment
   ): Promise<{ apiKey: string; apiUrl: string }> {
     const { code } = req.query;
 
@@ -156,9 +160,11 @@ export class OutlookAdapter implements Adapter {
 
     const oauth2Client = create(credentials);
 
+    const redirectUrl = this.getRedirectURL(clinqEnvironment);
+
     const result = await oauth2Client.authorizationCode.getToken({
       code,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUrl,
     });
 
     const {
