@@ -138,16 +138,6 @@ export class OutlookAdapter implements Adapter {
     return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}&clinq_environment=${clinqEnvironment}`;
   }
 
-  private getRedirectURL = (clinqEnvironment?: ClinqBetaEnvironment) => {
-    if (clinqEnvironment) {
-      return clinqEnvironment === "live"
-        ? "https://dev.phone.clinq.app/settings/oauth2"
-        : "https://app.local.clinq.com:3000/settings/oauth2";
-    }
-
-    return REDIRECT_URI;
-  };
-
   public async handleOAuth2Callback(
     req: Request,
     clinqEnvironment?: ClinqBetaEnvironment
@@ -160,11 +150,9 @@ export class OutlookAdapter implements Adapter {
 
     const oauth2Client = create(credentials);
 
-    const redirectUrl = this.getRedirectURL(clinqEnvironment);
-
     const result = await oauth2Client.authorizationCode.getToken({
       code,
-      redirect_uri: redirectUrl,
+      redirect_uri: REDIRECT_URI + `?clinq_environment=${clinqEnvironment}`,
     });
 
     const {
