@@ -4,6 +4,7 @@ import {
   Contact,
   ContactTemplate,
   ContactUpdate,
+  OAuthURLConfig,
   PhoneNumberLabel,
   ServerError,
 } from "@clinq/bridge";
@@ -123,11 +124,24 @@ export class OutlookAdapter implements Adapter {
     return client.api(`/me/contacts/${id}`).delete();
   }
 
-  public async getOAuth2RedirectUrl(): Promise<string> {
+  public async getOAuth2RedirectUrl(
+    urlConfig?: OAuthURLConfig | undefined
+  ): Promise<string> {
     const host = credentials.auth.tokenHost;
     const path = credentials.auth.authorizePath;
     const scopes = APP_SCOPES.split(" ").join("+");
     const callbackUri = encodeURIComponent(REDIRECT_URI);
+
+    if (urlConfig && urlConfig.clinqEnvironment) {
+      const redirectUrl =
+        urlConfig.clinqEnvironment === "live"
+          ? "https://dev.phone.clinq.app/settings/oauth2"
+          : "https://app.local.clinq.com:3000/settings/oauth2";
+
+      return `${host}/${path}?redirect_uri=${encodeURIComponent(
+        redirectUrl
+      )}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
+    }
     return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
   }
 
