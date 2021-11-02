@@ -131,13 +131,15 @@ export class OutlookAdapter implements Adapter {
     const host = credentials.auth.tokenHost;
     const path = credentials.auth.authorizePath;
     const scopes = APP_SCOPES.split(" ").join("+");
-    const callbackUri = encodeURIComponent(REDIRECT_URI);
 
     const clinqEnvironment = urlConfig && urlConfig.clinqEnvironment;
+    const callbackUri = encodeURIComponent(
+      REDIRECT_URI + `?clinq_environment=${clinqEnvironment}`
+    );
 
-    console.log("getOAuth2RedirectURL", clinqEnvironment);
+    console.log("getOAuth2RedirectURL", callbackUri);
 
-    return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}&clinq_environment=${clinqEnvironment}`;
+    return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
   }
 
   public async handleOAuth2Callback(
