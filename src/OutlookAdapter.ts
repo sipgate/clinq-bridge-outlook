@@ -135,6 +135,8 @@ export class OutlookAdapter implements Adapter {
 
     const clinqEnvironment = urlConfig && urlConfig.clinqEnvironment;
 
+    console.log("getOAuth2RedirectURL", clinqEnvironment);
+
     return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}&clinq_environment=${clinqEnvironment}`;
   }
 
@@ -154,6 +156,11 @@ export class OutlookAdapter implements Adapter {
       code,
       redirect_uri: REDIRECT_URI + `?clinq_environment=${clinqEnvironment}`,
     });
+    console.log(
+      "handleOAuth2Callback",
+      clinqEnvironment,
+      REDIRECT_URI + `?clinq_environment=${clinqEnvironment}`
+    );
 
     const {
       token: { access_token, refresh_token },
