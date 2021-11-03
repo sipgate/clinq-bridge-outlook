@@ -134,7 +134,9 @@ export class OutlookAdapter implements Adapter {
 
     const clinqEnvironment = urlConfig && urlConfig.clinqEnvironment;
     const callbackUri = encodeURIComponent(
-      `${REDIRECT_URI}/clinq-environment/${clinqEnvironment}`
+      clinqEnvironment
+        ? `${REDIRECT_URI}/clinq-environment/${clinqEnvironment}`
+        : REDIRECT_URI
     );
 
     return `${host}/${path}?redirect_uri=${callbackUri}&scope=${scopes}&response_type=code&client_id=${APP_ID}`;
@@ -154,7 +156,9 @@ export class OutlookAdapter implements Adapter {
 
     const result = await oauth2Client.authorizationCode.getToken({
       code,
-      redirect_uri: `${REDIRECT_URI}/clinq-environment/${clinqEnvironment}`,
+      redirect_uri: clinqEnvironment
+        ? `${REDIRECT_URI}/clinq-environment/${clinqEnvironment}`
+        : REDIRECT_URI,
     });
 
     const {
