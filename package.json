@@ -20,7 +20,7 @@
     "lint": "eslint 'src/**/*.ts' --fix"
   },
   "dependencies": {
-    "@clinq/bridge": "^11.8.3",
+    "@clinq/bridge": "^11.8.4",
     "@microsoft/microsoft-graph-client": "^2.0.0",
     "axios": "^0.21.1",
     "dotenv": "^10.0.0",
